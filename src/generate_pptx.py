@@ -5,6 +5,9 @@ This preserves all template styling, images, and backgrounds while adding your c
 """
 
 from pptx import Presentation
+from pptx.util import Pt
+from pptx.enum.text import PP_ALIGN
+from pptx.oxml.xmlchemy import OxmlElement
 import re
 import yaml
 import argparse
@@ -70,7 +73,6 @@ def parse_markdown_slides(md_file):
         content_lines = []
         section_name = ''
         
-        in_content = False
         for line in lines:
             line = line.strip()
             if not line:
@@ -84,7 +86,6 @@ def parse_markdown_slides(md_file):
                 print(f"  -> Section name: {section_name}")
             elif line.startswith('# '):
                 title = line.replace('#', '').strip()
-                in_content = True
                 print(f"  -> Title: {title}")
             elif line.startswith('## '):
                 if is_title:
@@ -119,6 +120,62 @@ def parse_markdown_slides(md_file):
     
     print(f"\nTotal parsed slides: {len(parsed_slides)}")
     return parsed_slides
+
+def remove_bullet(paragraph):
+    """Remove bullet formatting from a paragraph."""
+    pPr = paragraph._element.get_or_add_pPr()
+    pPr.insert(0, OxmlElement('a:buNone'))
+
+def add_numbering(paragraph, start_at=1):
+    """Add automatic numbering to a paragraph."""
+    pPr = paragraph._element.get_or_add_pPr()
+    # Create buAutoNum element for numbering
+    buAutoNum = OxmlElement('a:buAutoNum')
+    buAutoNum.set('type', 'arabicPeriod')  # 1. 2. 3. style
+    if start_at > 1:
+        buAutoNum.set('startAt', str(start_at))
+    pPr.insert(0, buAutoNum)
+
+def add_formatted_text(paragraph, text):
+    """
+    Add text to a paragraph with markdown formatting support (bold, italic).
+    Supports **bold**, *italic*, and ***bold+italic*** markdown syntax.
+    """
+    # Clear any existing text
+    paragraph.text = ""
+    
+    # Pattern to match markdown formatting
+    # Matches ***text*** (bold+italic), **text** (bold), or *text* (italic)
+    pattern = r'(\*\*\*.*?\*\*\*|\*\*.*?\*\*|\*.*?\*)'
+    
+    # Split text by markdown patterns
+    parts = re.split(pattern, text)
+    
+    for part in parts:
+        if not part:
+            continue
+        
+        # Check what type of formatting this part has
+        if part.startswith('***') and part.endswith('***'):
+            # Bold and italic
+            run = paragraph.add_run()
+            run.text = part[3:-3]
+            run.font.bold = True
+            run.font.italic = True
+        elif part.startswith('**') and part.endswith('**'):
+            # Bold
+            run = paragraph.add_run()
+            run.text = part[2:-2]
+            run.font.bold = True
+        elif part.startswith('*') and part.endswith('*'):
+            # Italic
+            run = paragraph.add_run()
+            run.text = part[1:-1]
+            run.font.italic = True
+        else:
+            # Regular text
+            run = paragraph.add_run()
+            run.text = part
 
 def apply_to_template(template_file, md_file, output_file):
     """Apply markdown content to PowerPoint template."""
@@ -195,27 +252,47 @@ def apply_to_template(template_file, md_file, output_file):
                 text_frame.clear()
                 print(f"  Adding content to text frame...")
                 
-                # Parse content (bullets, etc.)
+                # Parse content (bullets, numbered lists, etc.)
                 for line in slide_data['content'].split('\n'):
-                    line = line.strip()
-                    if not line:
+                    line_stripped = line.strip()
+                    if not line_stripped:
                         continue
                     
                     # Handle bullet points
-                    if line.startswith('- '):
+                    if line_stripped.startswith('- '):
                         p = text_frame.add_paragraph()
-                        p.text = line[2:]
+                        add_formatted_text(p, line_stripped[2:])
                         p.level = 0
-                        print(f"    Added bullet: {line[2:]}")
-                    elif line.startswith('  - '):
+                        # Bullets are on by default in template, so no need to set
+                        print(f"    Added bullet: {line_stripped[2:]}")
+                    elif line_stripped.startswith('  - '):
                         p = text_frame.add_paragraph()
-                        p.text = line[4:]
+                        add_formatted_text(p, line_stripped[4:])
                         p.level = 1
-                        print(f"    Added sub-bullet: {line[4:]}")
+                        # Bullets are on by default in template
+                        print(f"    Added sub-bullet: {line_stripped[4:]}")
+                    # Handle numbered lists (e.g., "1. ", "2. ")
+                    elif re.match(r'^\d+\.\s+', line_stripped):
+                        p = text_frame.add_paragraph()
+                        # Extract the number and text
+                        match = re.match(r'^(\d+)\.\s+(.*)$', line_stripped)
+                        if match:
+                            num = int(match.group(1))
+                            text = match.group(2)
+                        else:
+                            num = 1
+                            text = re.sub(r'^\d+\.\s+', '', line_stripped)
+                        add_formatted_text(p, text)
+                        p.level = 0
+                        # Add automatic numbering
+                        add_numbering(p, start_at=num)
+                        print(f"    Added numbered item {num}: {text}")
                     else:
                         p = text_frame.add_paragraph()
-                        p.text = line
-                        print(f"    Added text: {line}")
+                        add_formatted_text(p, line_stripped)
+                        # Turn off bullets for regular text
+                        remove_bullet(p)
+                        print(f"    Added text: {line_stripped}")
     
     print(f"\nSaving presentation to {output_file}...")
     prs.save(output_file)
