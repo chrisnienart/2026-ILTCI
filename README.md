@@ -1,0 +1,285 @@
+# ILTCI Presentation Generator
+
+A Python-based tool for generating professional PowerPoint presentations from Markdown content using customizable PPTX templates. This project maintains template styling, images, and backgrounds while seamlessly integrating your content.
+
+## Project Overview
+
+This tool allows you to:
+- Write presentation content in Markdown format
+- Apply content to professionally designed PowerPoint templates
+- Preserve all template styling, backgrounds, and images
+- Generate presentation slides programmatically
+- Maintain consistency across multiple presentations
+
+The generator parses Markdown files with slide separators and intelligently maps content to template layouts, including special handling for title slides, content slides with bullets, and other slide types.
+
+## Directory Structure
+
+```
+2026 ILTCI/
+├── src/                          # Python source code
+│   └── generate_pptx.py         # Main presentation generator script
+├── content/                      # Markdown content files
+│   ├── slides.md                # Slide content in Markdown format
+│   └── notes.md                 # Speaker notes (optional)
+├── templates/                    # PowerPoint templates
+│   └── template.pptx            # Base presentation template with styling
+├── assets/                       # Static resources
+│   ├── iltci-theme.css          # Theme styling reference
+│   ├── title_slide_bg_image1.png
+│   └── title_slide_bg_image2.png
+├── docs/                         # Documentation
+│   ├── INSTALLATION.md          # Installation guide
+│   ├── README_STYLING.md        # Styling guidelines
+│   └── template_styles_extracted.md  # Template style documentation
+├── output/                       # Generated presentations
+│   └── presentation.pptx        # Default output location
+├── config.yaml                   # Configuration file
+├── pyproject.toml               # Project dependencies
+└── README.md                    # This file
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.8 or higher
+- One of the following package managers:
+  - `uv` (recommended for faster installation)
+  - `pip` (standard Python package manager)
+
+### Installation
+
+#### Option 1: Using `uv` (Recommended)
+
+```bash
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Sync dependencies
+uv sync
+```
+
+#### Option 2: Using `pip`
+
+```bash
+# Create a virtual environment (recommended)
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+# Or manually:
+pip install python-pptx>=0.6.21 pyyaml>=6.0
+```
+
+### Quick Start
+
+1. **Edit your content**: Modify [`content/slides.md`](content/slides.md) with your presentation content
+2. **Run the generator**:
+   ```bash
+   python src/generate_pptx.py
+   ```
+3. **Find your presentation**: Check [`output/presentation.pptx`](output/presentation.pptx)
+
+## Configuration
+
+The generator uses [`config.yaml`](config.yaml) to manage paths and settings:
+
+```yaml
+paths:
+  # Template PowerPoint file
+  template: "templates/template.pptx"
+  
+  # Content source files
+  content: "content/slides.md"
+  notes: "content/notes.md"
+  
+  # Output configuration
+  output: "output/presentation.pptx"
+  
+  # Assets directory
+  assets_dir: "assets/"
+
+settings:
+  # Overwrite existing output file
+  overwrite_output: true
+```
+
+### Configuration Options
+
+- **`paths.template`**: Path to your PowerPoint template file
+- **`paths.content`**: Path to your Markdown content file
+- **`paths.notes`**: Path to speaker notes (optional)
+- **`paths.output`**: Where the generated presentation will be saved
+- **`paths.assets_dir`**: Directory containing images and other assets
+- **`settings.overwrite_output`**: Whether to overwrite existing output files
+
+## Usage
+
+### Basic Usage
+
+Generate a presentation using default configuration:
+
+```bash
+python src/generate_pptx.py
+```
+
+### Using Command-Line Arguments
+
+Override configuration settings via command-line arguments:
+
+```bash
+# Use a different config file
+python src/generate_pptx.py --config custom_config.yaml
+
+# Override template path
+python src/generate_pptx.py --template templates/custom_template.pptx
+
+# Override content file
+python src/generate_pptx.py --content content/my_slides.md
+
+# Override output location
+python src/generate_pptx.py --output output/my_presentation.pptx
+
+# Combine multiple overrides
+python src/generate_pptx.py \
+  --template templates/custom_template.pptx \
+  --content content/quarterly_report.md \
+  --output output/Q4_2026_Report.pptx
+```
+
+### Command-Line Options
+
+- `--config PATH`: Path to configuration file (default: `config.yaml`)
+- `--template PATH`: Path to PowerPoint template (overrides config)
+- `--content PATH`: Path to Markdown content file (overrides config)
+- `--output PATH`: Path to output PowerPoint file (overrides config)
+
+### Markdown Content Format
+
+Create slides in Markdown with slide separators (`---`):
+
+```markdown
+---
+title: "Your Presentation Title"
+author: "Your Name"
+date: "2026-01-01"
+---
+
+<!-- _class: title -->
+
+### Section Name
+
+# Main Title
+
+## Subtitle Line 1
+
+### Subtitle Line 2
+
+---
+
+# Slide Title
+
+- First bullet point
+- Second bullet point
+  - Sub-bullet point
+- Third bullet point
+
+---
+
+# Another Slide
+
+Content goes here...
+```
+
+**Key formatting notes:**
+- Use `---` to separate slides
+- Use `<!-- _class: title -->` for title slides
+- Use `#` for main titles
+- Use `##` and `###` for subtitles on title slides
+- Use `-` for bullet points
+- Indent with two spaces for sub-bullets
+
+## Examples
+
+### Example 1: Simple Presentation
+
+```bash
+# Create a basic presentation with default settings
+python src/generate_pptx.py
+```
+
+### Example 2: Custom Template
+
+```bash
+# Use a custom template for a specific client
+python src/generate_pptx.py \
+  --template templates/client_template.pptx \
+  --output output/client_presentation.pptx
+```
+
+### Example 3: Multiple Presentations
+
+```bash
+# Generate different presentations from different content
+python src/generate_pptx.py --content content/intro.md --output output/intro.pptx
+python src/generate_pptx.py --content content/advanced.md --output output/advanced.pptx
+```
+
+## Documentation
+
+Additional documentation is available in the [`docs/`](docs) directory:
+
+- **[`INSTALLATION.md`](docs/INSTALLATION.md)**: Detailed installation instructions
+- **[`README_STYLING.md`](docs/README_STYLING.md)**: Guide to styling and customization
+- **[`template_styles_extracted.md`](docs/template_styles_extracted.md)**: Template style reference
+
+## Troubleshooting
+
+### Common Issues
+
+**Issue**: `FileNotFoundError: Configuration file not found`
+- **Solution**: Ensure [`config.yaml`](config.yaml) exists in the project root or specify the correct path with `--config`
+
+**Issue**: `Template file not found`
+- **Solution**: Verify the template path in [`config.yaml`](config.yaml) or provide the correct path with `--template`
+
+**Issue**: `Content file not found`
+- **Solution**: Check that your Markdown file exists at the specified path
+
+**Issue**: Slides not appearing as expected
+- **Solution**: Verify your Markdown formatting, especially slide separators (`---`) and heading levels
+
+## Project Dependencies
+
+This project uses the following Python packages:
+
+- **python-pptx** (>=0.6.21): Python library for creating and updating PowerPoint files
+- **pyyaml** (>=6.0): YAML parser for configuration files
+
+Dependencies are managed in [`pyproject.toml`](pyproject.toml).
+
+## Contributing
+
+When contributing to this project:
+
+1. Maintain the existing directory structure
+2. Update documentation when adding features
+3. Test with various markdown formats
+4. Preserve template compatibility
+
+## License
+
+This project is part of the 2026 ILTCI presentation materials.
+
+## Support
+
+For issues or questions:
+1. Check the documentation in the [`docs/`](docs) directory
+2. Review the example content in [`content/slides.md`](content/slides.md)
+3. Verify your configuration in [`config.yaml`](config.yaml)
+
+---
+
+**Last Updated**: December 2025

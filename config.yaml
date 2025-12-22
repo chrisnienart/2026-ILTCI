@@ -1,0 +1,22 @@
+# Configuration for 2026 ILTCI Presentation Generator
+
+paths:
+  # Template PowerPoint file
+  template: "templates/template.pptx"
+  
+  # Content source files
+  content: "content/slides.md"
+  notes: "content/notes.md"
+  
+  # Output configuration
+  output: "output/presentation.pptx"
+  
+  # Assets directory
+  assets_dir: "assets/"
+
+settings:
+  # Overwrite existing output file
+  overwrite_output: true
+  
+  # Future expansion:
+  # theme: "assets/iltci-theme.css"
