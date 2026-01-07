@@ -20,8 +20,8 @@ theme: iltci
 
 # Introduction
 
-**Core Analogy: AI is this generation's computer**
-- Everyone will need to know how to use it in their area of engagement
+## **Core Analogy: AI is this generation's computer**
+Everyone will need to know how to use it in their area of engagement
 
 <div class="image-container">
   <img src="assets/steve-jobs-mac.png" alt="Steve Jobs with Mac" class="img-medium">
@@ -32,8 +32,8 @@ theme: iltci
 
 # Introduction
 
-**Key Concept: AI has commoditized expertise**
-- Costs (and revenue) are massively reduced
+## **Key Concept: AI has commoditized expertise**
+Costs (and revenue) are massively reduced
 
 <div class="image-container">
   <img src="assets/Normal_Distribution_PDF.png" alt="normal distribution" class="img-large">
@@ -54,8 +54,15 @@ theme: iltci
 
 # New skills
 
+**Using with Agents**
+- You will need to learn how to integrate LLMs directly into your workspace
+
+---
+
+# New skills
+
 **Markdown**
-- Learn to interact with LLMs
+- Use text effectively to interact with LLMs
 
 <div class="image-container">
   <img src="assets/markdown.png" alt="raw and rendered markdown" class="img-large">
@@ -136,6 +143,24 @@ theme: iltci
 
 ---
 
+# Sample Projects
+
+**Minesweeper**
+
+<div class="image-container">
+  <img src="assets/minesweeper.png" alt="minesweeper" class="img-large">
+</div>
+
+---
+
+**Menu Gen**
+
+<div class="image-container">
+  <img src="assets/menugen.png" alt="menu gen" class="img-large">
+</div>
+
+---
+
 # Summary
 
 **Adjust to the culture shock and new paradigm** 
@@ -149,6 +174,37 @@ theme: iltci
 
 ---
 
+# Resources
+
+**Videos**
+- [1998 Apple keynote, the first iMac](https://youtu.be/10cZg8pLmXk?si=1Vb8eKmrxirk_QX_&t=959) 
+- [2023 OpenAI dev day, ChatGPT](https://www.youtube.com/live/U9mJuUkhUzk?si=1mxJvgTxAUMFm4MV&t=1200)
+- [Andrej Karpathy: Software is Changing (Again)](https://youtu.be/LCEmiRjPEtQ?si=r0a9gM7zQgMzxAxr&t=1897)
+
+**Projects**
+- [RPEC tool](https://rpec-rag.streamlit.app/)
+- [Minesweeper](https://github.com/chrisnienart/minesweeper/)
+- [Menugen](https://menugen.app/)
+
+**Standards**
+- [Markdown](https://www.markdownguide.org/)
+- [Git](https://git-scm.com/)
+
+---
+
+# Resources
+
+**Additional resources**
+- [GitHub](https://github.com/)
+- [VS Code](https://code.visualstudio.com/)
+- [Amplenote](https://www.amplenote.com/)
+- [KiloCode](https://www.kilocode.com/)
+- [Artificial Analysis](https://www.artificialanalysis.ai/)
+
+---
+
 # Questions?
 
-**Thank you**
+## Thank you
+
+### Chris Nienart

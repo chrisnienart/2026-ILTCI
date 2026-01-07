@@ -98,13 +98,21 @@ def parse_markdown_slides(md_file):
                     if not title:
                         title = line.replace('##', '').strip()
                         print(f"  -> Title (from ##): {title}")
+                    else:
+                        # If title already exists, treat ## as content
+                        content_lines.append(line)
+                        print(f"  -> Content (##): {line}")
             elif line.startswith('### '):
                 if is_title:
                     subtitle_lines.append(line.replace('###', '').strip())
                     print(f"  -> Subtitle: {line.replace('###', '').strip()}")
                 else:
                     content_lines.append(line)
-                    print(f"  -> Content: {line}")
+                    print(f"  -> Content (###): {line}")
+            elif line.startswith('#### ') or line.startswith('##### '):
+                # H4 and H5 always go to content
+                content_lines.append(line)
+                print(f"  -> Content (####/####): {line}")
             else:
                 content_lines.append(line)
                 print(f"  -> Content: {line[:50]}")
@@ -210,6 +218,14 @@ def add_images_to_slide(slide, images, base_path='.'):
         except Exception as e:
             print(f"    Error adding image {img_path}: {e}")
 
+def add_bullet(paragraph, level=0):
+    """Add bullet formatting to a paragraph."""
+    pPr = paragraph._element.get_or_add_pPr()
+    # Create bullet element
+    buChar = OxmlElement('a:buChar')
+    buChar.set('char', '•')  # Bullet character
+    pPr.insert(0, buChar)
+
 def remove_bullet(paragraph):
     """Remove bullet formatting from a paragraph."""
     pPr = paragraph._element.get_or_add_pPr()
@@ -227,15 +243,15 @@ def add_numbering(paragraph, start_at=1):
 
 def add_formatted_text(paragraph, text):
     """
-    Add text to a paragraph with markdown formatting support (bold, italic).
-    Supports **bold**, *italic*, and ***bold+italic*** markdown syntax.
+    Add text to a paragraph with markdown formatting support (bold, italic, links).
+    Supports **bold**, *italic*, ***bold+italic***, and [text](url) markdown syntax.
     """
     # Clear any existing text
     paragraph.text = ""
     
-    # Pattern to match markdown formatting
-    # Matches ***text*** (bold+italic), **text** (bold), or *text* (italic)
-    pattern = r'(\*\*\*.*?\*\*\*|\*\*.*?\*\*|\*.*?\*)'
+    # Pattern to match markdown formatting including links
+    # Matches [text](url) links, ***text*** (bold+italic), **text** (bold), or *text* (italic)
+    pattern = r'(\[.*?\]\(.*?\)|\*\*\*.*?\*\*\*|\*\*.*?\*\*|\*.*?\*)'
     
     # Split text by markdown patterns
     parts = re.split(pattern, text)
@@ -245,7 +261,20 @@ def add_formatted_text(paragraph, text):
             continue
         
         # Check what type of formatting this part has
-        if part.startswith('***') and part.endswith('***'):
+        if part.startswith('[') and part.endswith(')') and '](' in part:
+            # Markdown link [text](url)
+            # Extract the link text and URL
+            link_match = re.match(r'\[(.*?)\]\((.*?)\)', part)
+            if link_match:
+                link_text = link_match.group(1)
+                link_url = link_match.group(2)
+                run = paragraph.add_run()
+                run.text = link_text
+                # Add hyperlink
+                run.hyperlink.address = link_url
+                # Add underline for visibility (PowerPoint will handle color)
+                run.font.underline = True
+        elif part.startswith('***') and part.endswith('***'):
             # Bold and italic
             run = paragraph.add_run()
             run.text = part[3:-3]
@@ -271,7 +300,15 @@ def apply_to_template(template_file, md_file, output_file):
     print(f"\nLoading template: {template_file}")
     prs = Presentation(template_file)
     
-    print(f"Template has {len(prs.slide_layouts)} layouts")
+    # Collect all layouts from all slide masters
+    all_layouts = []
+    for master in prs.slide_masters:
+        all_layouts.extend(master.slide_layouts)
+    
+    print(f"Template has {len(prs.slide_masters)} slide master(s)")
+    print(f"Template has {len(all_layouts)} total layout(s) across all masters:")
+    for i, layout in enumerate(all_layouts):
+        print(f"  Layout {i}: {layout.name}")
     print(f"Template has {len(prs.slides)} existing slides")
     
     parsed_slides = parse_markdown_slides(md_file)
@@ -291,9 +328,12 @@ def apply_to_template(template_file, md_file, output_file):
         print(f"  Is title slide: {slide_data['is_title']}")
         
         if slide_data['is_title']:
-            # Use title slide layout (index 0)
-            slide = prs.slides.add_slide(prs.slide_layouts[0])
-            print(f"  Using layout 0 (title slide), {len(slide.shapes)} shapes")
+            # Use title slide layout (first layout from all masters)
+            # Check if any layouts exist
+            if len(all_layouts) == 0:
+                raise IndexError("No slide layouts available in template")
+            slide = prs.slides.add_slide(all_layouts[0])
+            print(f"  Using layout 0 ({all_layouts[0].name}), {len(slide.shapes)} shapes")
             
             # Debug: print all shapes
             for i, shape in enumerate(slide.shapes):
@@ -315,9 +355,17 @@ def apply_to_template(template_file, md_file, output_file):
                 slide.shapes[1].text = slide_data['subtitle']
                 print(f"  Set subtitle in shape 1")
         else:
-            # Use content slide layout (index 1)
-            slide = prs.slides.add_slide(prs.slide_layouts[1])
-            print(f"  Using layout 1 (content slide), {len(slide.shapes)} shapes")
+            # Use content slide layout (index 1 if available, otherwise 0)
+            # Check if layout index 1 exists across all masters
+            if len(all_layouts) < 2:
+                print(f"  Warning: Only {len(all_layouts)} layout(s) available.")
+                print(f"  Using layout 0 for content slide")
+                layout_idx = 0
+                slide = prs.slides.add_slide(all_layouts[0])
+            else:
+                layout_idx = 1
+                slide = prs.slides.add_slide(all_layouts[1])
+            print(f"  Using layout {layout_idx} ({all_layouts[layout_idx].name}), {len(slide.shapes)} shapes")
             
             # Debug: print all shapes
             for i, shape in enumerate(slide.shapes):
@@ -357,18 +405,63 @@ def apply_to_template(template_file, md_file, output_file):
                     if not line_stripped:
                         continue
                     
+                    # Handle headers (h2-h5) with different sizes
+                    if line_stripped.startswith('##### '):
+                        # H5 header
+                        p = text_frame.add_paragraph()
+                        add_formatted_text(p, line_stripped[6:])
+                        p.level = 0
+                        remove_bullet(p)
+                        for run in p.runs:
+                            run.font.size = Pt(18)  # Smallest header
+                        print(f"    Added h5 header: {line_stripped[6:]}")
+                    elif line_stripped.startswith('#### '):
+                        # H4 header
+                        p = text_frame.add_paragraph()
+                        add_formatted_text(p, line_stripped[5:])
+                        p.level = 0
+                        remove_bullet(p)
+                        for run in p.runs:
+                            run.font.size = Pt(20)
+                        print(f"    Added h4 header: {line_stripped[5:]}")
+                    elif line_stripped.startswith('### '):
+                        # H3 header
+                        p = text_frame.add_paragraph()
+                        add_formatted_text(p, line_stripped[4:])
+                        p.level = 0
+                        remove_bullet(p)
+                        for run in p.runs:
+                            run.font.size = Pt(24)
+                        print(f"    Added h3 header: {line_stripped[4:]}")
+                    elif line_stripped.startswith('## '):
+                        # H2 header
+                        p = text_frame.add_paragraph()
+                        add_formatted_text(p, line_stripped[3:])
+                        p.level = 0
+                        remove_bullet(p)
+                        for run in p.runs:
+                            run.font.size = Pt(32)  # Largest header
+                        print(f"    Added h2 header: {line_stripped[3:]}")
                     # Handle bullet points
-                    if line_stripped.startswith('- '):
+                    elif line_stripped.startswith('- '):
                         p = text_frame.add_paragraph()
                         add_formatted_text(p, line_stripped[2:])
                         p.level = 0
-                        # Bullets are on by default in template, so no need to set
+                        # Explicitly add bullet formatting
+                        add_bullet(p, level=0)
+                        # Set font size for bullet text
+                        for run in p.runs:
+                            run.font.size = Pt(24)
                         print(f"    Added bullet: {line_stripped[2:]}")
                     elif line_stripped.startswith('  - '):
                         p = text_frame.add_paragraph()
                         add_formatted_text(p, line_stripped[4:])
                         p.level = 1
-                        # Bullets are on by default in template
+                        # Explicitly add bullet formatting for sub-bullets
+                        add_bullet(p, level=1)
+                        # Set font size for sub-bullet text
+                        for run in p.runs:
+                            run.font.size = Pt(24)
                         print(f"    Added sub-bullet: {line_stripped[4:]}")
                     # Handle numbered lists (e.g., "1. ", "2. ")
                     elif re.match(r'^\d+\.\s+', line_stripped):
@@ -385,12 +478,18 @@ def apply_to_template(template_file, md_file, output_file):
                         p.level = 0
                         # Add automatic numbering
                         add_numbering(p, start_at=num)
+                        # Set font size for numbered text
+                        for run in p.runs:
+                            run.font.size = Pt(24)
                         print(f"    Added numbered item {num}: {text}")
                     else:
                         p = text_frame.add_paragraph()
                         add_formatted_text(p, line_stripped)
                         # Turn off bullets for regular text
                         remove_bullet(p)
+                        # Set font size for regular text
+                        for run in p.runs:
+                            run.font.size = Pt(24)
                         print(f"    Added text: {line_stripped}")
                 
                 # Add images if any were found
