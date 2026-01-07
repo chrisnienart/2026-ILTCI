@@ -1,0 +1,124 @@
+/* Image Layout Styles for ILTCI Presentation */
+
+/* Container for images */
+.image-container {
+  display: flex;
+  justify-content: center;
+  gap: 50px;
+  margin-top: 30px;
+}
+
+.image-container.small-gap {
+  gap: 20px;
+}
+
+.image-container.large-gap {
+  gap: 80px;
+}
+
+/* Image sizing classes */
+.img-small {
+  height: 200px;
+  object-fit: contain;
+}
+
+.img-medium {
+  height: 300px;
+  object-fit: contain;
+}
+
+.img-large {
+  height: 400px;
+  object-fit: contain;
+}
+
+.img-full-width {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Image alignment */
+.img-left {
+  margin-right: auto;
+}
+
+.img-right {
+  margin-left: auto;
+}
+
+.img-center {
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+
+/* Grid layouts for multiple images */
+.image-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 30px;
+  margin-top: 30px;
+}
+
+.image-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.image-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(2, 2fr);
+  gap: 20px;
+  margin-top: 30px;
+}
+
+/* Flexbox layouts */
+.image-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 50px;
+  margin-top: 30px;
+}
+
+.image-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  margin-top: 30px;
+}
+
+/* Specific use cases */
+.side-by-side {
+  display: flex;
+  justify-content: center;
+  gap: 50px;
+  margin-top: 30px;
+}
+
+.side-by-side img {
+  height: 300px;
+  object-fit: contain;
+}
+
+/* Image with caption */
+.image-with-caption {
+  text-align: center;
+  margin: 30px auto;
+}
+
+.image-with-caption img {
+  display: block;
+  margin: 0 auto 10px;
+}
+
+.image-with-caption .caption {
+  font-size: 20pt;
+  color: #44546A;
+  font-style: italic;
+}

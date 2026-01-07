@@ -8,10 +8,12 @@ from pptx import Presentation
 from pptx.util import Pt
 from pptx.enum.text import PP_ALIGN
 from pptx.oxml.xmlchemy import OxmlElement
+from pptx.util import Inches
 import re
 import yaml
 import argparse
 from pathlib import Path
+from html.parser import HTMLParser
 
 def parse_markdown_slides(md_file):
     """Parse markdown file into individual slides."""
@@ -120,6 +122,93 @@ def parse_markdown_slides(md_file):
     
     print(f"\nTotal parsed slides: {len(parsed_slides)}")
     return parsed_slides
+
+class ImageExtractor(HTMLParser):
+    """Extract image tags and their attributes from HTML."""
+    def __init__(self):
+        super().__init__()
+        self.images = []
+    
+    def handle_starttag(self, tag, attrs):
+        if tag == 'img':
+            attr_dict = dict(attrs)
+            self.images.append(attr_dict)
+
+def extract_images_from_html(html_content):
+    """Extract image information from HTML content."""
+    parser = ImageExtractor()
+    parser.feed(html_content)
+    return parser.images
+
+def has_html_content(text):
+    """Check if text contains HTML tags."""
+    return bool(re.search(r'<[^>]+>', text))
+
+def remove_html_tags(text):
+    """Remove HTML tags from text but preserve the content structure."""
+    # Remove complete HTML blocks that we've processed (like img tags in divs)
+    text = re.sub(r'<div[^>]*>.*?</div>', '', text, flags=re.DOTALL)
+    # Remove any remaining standalone tags
+    text = re.sub(r'<[^>]+>', '', text)
+    return text.strip()
+
+def add_images_to_slide(slide, images, base_path='.'):
+    """Add images to a slide based on extracted image information."""
+    if not images:
+        return
+    
+    # Calculate layout for multiple images
+    slide_width = slide.shapes[0].width if slide.shapes else Inches(10)
+    slide_height = Inches(7.5)  # Standard slide height
+    
+    # Starting position (centered horizontally, positioned in lower half)
+    num_images = len(images)
+    
+    # Default image dimensions
+    img_height = Inches(3)  # 3 inches default height
+    
+    # Calculate spacing and positions for horizontal layout
+    total_gap = Inches(0.5) * (num_images - 1) if num_images > 1 else Inches(0)
+    img_width = Inches(2.5)  # Default width
+    
+    # Center the images horizontally
+    total_width = (img_width * num_images) + total_gap
+    start_left = (Inches(10) - total_width) / 2
+    top_position = Inches(4)  # Position in lower half of slide
+    
+    for idx, img_info in enumerate(images):
+        img_src = img_info.get('src', '')
+        if not img_src:
+            continue
+        
+        # Construct full path
+        img_path = Path(base_path) / img_src
+        
+        if not img_path.exists():
+            print(f"    Warning: Image not found: {img_path}")
+            continue
+        
+        # Calculate position
+        left = start_left + (idx * (img_width + Inches(0.5)))
+        
+        # Extract height from style if present
+        style = img_info.get('style', '')
+        height_match = re.search(r'height:\s*(\d+)px', style)
+        if height_match:
+            height_px = int(height_match.group(1))
+            img_height = Inches(height_px / 72)  # Convert pixels to inches (rough conversion)
+        
+        try:
+            # Add the image to the slide
+            picture = slide.shapes.add_picture(
+                str(img_path),
+                left,
+                top_position,
+                height=img_height
+            )
+            print(f"    Added image: {img_path} at position ({left}, {top_position})")
+        except Exception as e:
+            print(f"    Error adding image {img_path}: {e}")
 
 def remove_bullet(paragraph):
     """Remove bullet formatting from a paragraph."""
@@ -252,8 +341,18 @@ def apply_to_template(template_file, md_file, output_file):
                 text_frame.clear()
                 print(f"  Adding content to text frame...")
                 
+                # Check if content has HTML with images
+                content = slide_data['content']
+                images = []
+                if has_html_content(content):
+                    print(f"  Detected HTML content, extracting images...")
+                    images = extract_images_from_html(content)
+                    print(f"  Found {len(images)} images")
+                    # Remove HTML from content
+                    content = remove_html_tags(content)
+                
                 # Parse content (bullets, numbered lists, etc.)
-                for line in slide_data['content'].split('\n'):
+                for line in content.split('\n'):
                     line_stripped = line.strip()
                     if not line_stripped:
                         continue
@@ -293,6 +392,11 @@ def apply_to_template(template_file, md_file, output_file):
                         # Turn off bullets for regular text
                         remove_bullet(p)
                         print(f"    Added text: {line_stripped}")
+                
+                # Add images if any were found
+                if images:
+                    print(f"  Adding {len(images)} images to slide...")
+                    add_images_to_slide(slide, images)
     
     print(f"\nSaving presentation to {output_file}...")
     prs.save(output_file)

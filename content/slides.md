@@ -26,6 +26,11 @@ theme: iltci
 **Key Concept: AI has commoditized expertise**
 - Costs (and revenue) are massively reduced
 
+<div class="image-container">
+  <img src="assets/steve-jobs-mac.png" alt="Steve Jobs with Mac" class="img-medium">
+  <img src="assets/sam-altman-chatgpt.png" alt="Sam Altman with ChatGPT" class="img-medium">
+</div>
+
 ---
 
 # Current State
