@@ -337,7 +337,11 @@ When contributing to this project:
 3. Test with various markdown formats
 4. Preserve template compatibility
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
+
 ## License
+
+[MIT License](LICENSE.md)
 
 This project is part of the 2026 ILTCI presentation materials.
 
@@ -350,4 +354,4 @@ For issues or questions:
 
 ---
 
-**Last Updated**: December 2025
+**Last Updated**: January 2026
